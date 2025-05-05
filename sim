@@ -1,0 +1,626 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import stats
+import seaborn as sns
+from io import StringIO
+
+# Load the data
+data = """home_team,away_team,HomeScore,AwayScore
+Bath,Bristol,26,36
+Bath,Exeter,19,15
+Bath,Gloucester,42,26
+Bath,Harlequins,47,28
+Bath,Newcastle,55,19
+Bath,Northampton,38,16
+Bath,Sale,40,13
+Bath,Saracens,68,10
+Bristol,Exeter,52,38
+Bristol,Gloucester,41,44
+Bristol,Leicester,19,36
+Bristol,Newcastle,55,35
+Bristol,Northampton,31,2
+Bristol,Sale,0,38
+Bristol,Saracens,35,37
+Exeter,Bath,24,26
+Exeter,Bristol,35,40
+Exeter,Gloucester,22,15
+Exeter,Harlequins,19,36
+Exeter,Leicester,14,17
+Exeter,Newcastle,17,15
+Exeter,Saracens,31,22
+Gloucester,Bath,31,55
+Gloucester,Bristol,53,28
+Gloucester,Exeter,79,17
+Gloucester,Harlequins,14,0
+Gloucester,Leicester,38,31
+Gloucester,Newcastle,36,7
+Gloucester,Sale,36,20
+Gloucester,Saracens,26,35
+Harlequins,Bath,24,26
+Harlequins,Bristol,24,48
+Harlequins,Leicester,34,34
+Harlequins,Newcastle,28,14
+Harlequins,Northampton,22,19
+Harlequins,Sale,29,43
+Harlequins,Saracens,17,10
+Leicester,Bath,15,20
+Leicester,Bristol,24,54
+Leicester,Exeter,28,15
+Leicester,Gloucester,29,26
+Leicester,Harlequins,40,7
+Leicester,Northampton,24,8
+Leicester,Saracens,22,29
+Newcastle,Bath,15,40
+Newcastle,Bristol,3,24
+Newcastle,Exeter,24,18
+Newcastle,Harlequins,14,38
+Newcastle,Leicester,10,42
+Newcastle,Northampton,34,35
+Newcastle,Sale,15,39
+Newcastle,Saracens,17,12
+Northampton,Bath,35,34
+Northampton,Bristol,48,31
+Northampton,Exeter,30,24
+Northampton,Gloucester,17,25
+Northampton,Harlequins,33,29
+Northampton,Leicester,0,33
+Northampton,Newcastle,61,0
+Northampton,Sale,47,17
+Sale,Bath,23,32
+Sale,Exeter,28,10
+Sale,Gloucester,31,27
+Sale,Harlequins,12,11
+Sale,Leicester,39,25
+Sale,Newcastle,43,10
+Sale,Northampton,27,24
+Sale,Saracens,25,7
+Saracens,Bristol,35,26
+Saracens,Exeter,29,14
+Saracens,Gloucester,36,14
+Saracens,Harlequins,12,23
+Saracens,Leicester,29,32
+Saracens,Northampton,39,24
+Saracens,Sale,45,26"""
+
+data_24 = """home_team,away_team,HomeScore,AwayScore
+Bath,Bristol,20,19
+Bath,Exeter,41,24
+Bath,Gloucester,17,10
+Bath,Harlequins,25,17
+Bath,Leicester,24,25
+Bath,Newcastle,34,26
+Bath,Northampton,43,12
+Bath,Sale,42,24
+Bath,Saracens,12,15
+Bristol,Bath,57,44
+Bristol,Exeter,14,24
+Bristol,Gloucester,51,26
+Bristol,Harlequins,21,23
+Bristol,Leicester,25,14
+Bristol,Newcastle,85,14
+Bristol,Northampton,52,21
+Bristol,Sale,13,27
+Bristol,Saracens,20,41
+Exeter,Bath,14,26
+Exeter,Bristol,29,20
+Exeter,Gloucester,25,24
+Exeter,Harlequins,58,26
+Exeter,Leicester,29,10
+Exeter,Newcastle,25,16
+Exeter,Northampton,36,42
+Exeter,Sale,43,0
+Exeter,Saracens,65,10
+Gloucester,Bath,27,45
+Gloucester,Bristol,24,33
+Gloucester,Exeter,17,38
+Gloucester,Harlequins,29,28
+Gloucester,Leicester,20,38
+Gloucester,Newcastle,54,14
+Gloucester,Northampton,29,31
+Gloucester,Sale,32,20
+Gloucester,Saracens,3,24
+Harlequins,Bath,40,36
+Harlequins,Bristol,28,53
+Harlequins,Exeter,22,14
+Harlequins,Gloucester,32,26
+Harlequins,Leicester,19,20
+Harlequins,Newcastle,40,12
+Harlequins,Northampton,41,32
+Harlequins,Sale,36,3
+Harlequins,Saracens,10,38
+Leicester,Bath,35,22
+Leicester,Bristol,19,21
+Leicester,Exeter,40,22
+Leicester,Gloucester,25,27
+Leicester,Harlequins,25,29
+Leicester,Newcastle,47,3
+Leicester,Northampton,26,17
+Leicester,Sale,17,24
+Leicester,Saracens,19,10
+Newcastle,Bath,17,28
+Newcastle,Bristol,13,21
+Newcastle,Exeter,14,20
+Newcastle,Gloucester,14,18
+Newcastle,Harlequins,3,24
+Newcastle,Leicester,13,19
+Newcastle,Northampton,14,16
+Newcastle,Sale,14,35
+Newcastle,Saracens,12,50
+Northampton,Bath,24,18
+Northampton,Bristol,27,33
+Northampton,Exeter,34,19
+Northampton,Gloucester,90,0
+Northampton,Harlequins,36,33
+Northampton,Leicester,40,17
+Northampton,Newcastle,38,13
+Northampton,Sale,21,17
+Northampton,Saracens,41,30
+Sale,Bath,11,9
+Sale,Bristol,14,22
+Sale,Exeter,41,5
+Sale,Gloucester,24,10
+Sale,Harlequins,37,31
+Sale,Leicester,31,22
+Sale,Newcastle,40,22
+Sale,Northampton,20,15
+Sale,Saracens,22,20
+Saracens,Bath,16,25
+Saracens,Bristol,39,31
+Saracens,Exeter,40,22
+Saracens,Gloucester,46,24
+Saracens,Harlequins,52,7
+Saracens,Leicester,32,17
+Saracens,Newcastle,37,19
+Saracens,Northampton,12,18
+Saracens,Sale,10,20"""
+
+data_CC = """home_team,away_team,HomeScore,AwayScore
+Exeter Chiefs,Toulouse,21,64
+Benetton,Bath,22,21
+Stade Francais,Saracens,17,28
+Toulon,Glasgow Warriors,30,29
+Ulster,Bordeaux Bègles,19,40
+Leicester Tigers,Durban Sharks,56,17
+Leinster,ASM Clermont Auvergne,15,7
+La Rochelle,Bristol,35,7
+Pretoria Bulls,Northampton Saints,21,30
+Harlequins,Cape Town Stormers,53,16
+Castres,Munster,16,14
+Sale,Racing 92,29,7
+Bordeaux Bègles,Leicester Tigers,42,28
+Toulouse,Ulster,61,21
+Bristol,Leinster,12,35
+Durban Sharks,Exeter Chiefs,39,21
+ASM Clermont Auvergne,Benetton,28,0
+Northampton Saints,Castres,38,8
+Munster,Stade Francais,33,7
+Saracens,Pretoria Bulls,27,5
+Cape Town Stormers,Toulon,14,24
+Glasgow Warriors,Sale,38,19
+Racing 92,Harlequins,23,12
+Bath,La Rochelle,20,24
+Glasgow Warriors,Racing 92,29,19
+Cape Town Stormers,Sale,40,0
+Castres,Pretoria Bulls,49,10
+Stade Francais,Northampton Saints,45,35
+Munster,Saracens,17,12
+Leicester Tigers,Ulster,38,10
+Durban Sharks,Toulouse,8,20
+Exeter Chiefs,Bordeaux Bègles,17,69
+Toulon,Harlequins,33,21
+Bath,ASM Clermont Auvergne,40,21
+La Rochelle,Leinster,14,16
+Bristol,Benetton,35,29
+Ulster,Exeter Chiefs,52,24
+Racing 92,Cape Town Stormers,31,22
+Harlequins,Glasgow Warriors,24,7
+Northampton Saints,Munster,34,32
+Pretoria Bulls,Stade Francais,48,7
+Leinster,Bath,47,21
+Benetton,La Rochelle,32,25
+ASM Clermont Auvergne,Bristol,33,26
+Sale,Toulon,33,7
+Saracens,Castres,24,32
+Toulouse,Leicester Tigers,80,12
+Bordeaux Bègles,Durban Sharks,66,12
+Northampton Saints,ASM Clermont Auvergne,46,24
+Glasgow Warriors,Leicester Tigers,43,19
+La Rochelle,Munster,24,25
+Leinster,Harlequins,62,0
+Castres,Benetton,39,37
+Toulon,Saracens,72,42
+Toulouse,Sale,38,15
+Bordeaux Bègles,Ulster,43,31
+Leinster,Glasgow Warriors,52,0
+Northampton Saints,Castres,51,16
+Bordeaux Bègles,Munster,47,29
+Toulon,Toulouse,18,21"""
+
+# Load data into DataFrame
+df = pd.read_csv(StringIO(data))
+
+# Calculate point differentials and results
+df['HomePointDiff'] = df['HomeScore'] - df['AwayScore']
+df['AwayPointDiff'] = df['AwayScore'] - df['HomeScore']
+df['HomeWin'] = (df['HomePointDiff'] > 0).astype(int)
+df['AwayWin'] = (df['AwayPointDiff'] > 0).astype(int)
+df['Draw'] = ((df['HomePointDiff'] == 0) & (df['AwayPointDiff'] == 0)).astype(int)
+
+# Get unique teams
+teams = sorted(pd.unique(df[['home_team', 'away_team']].values.ravel('K')))
+
+# Create team statistics dataframes
+team_stats = pd.DataFrame(index=teams)
+
+# Calculate scoring rates
+home_scoring = df.groupby('home_team')['HomeScore'].mean()
+away_scoring = df.groupby('away_team')['AwayScore'].mean()
+home_conceding = df.groupby('home_team')['AwayScore'].mean()
+away_conceding = df.groupby('away_team')['HomeScore'].mean()
+
+# Calculate win percentages
+home_win_pct = df.groupby('home_team')['HomeWin'].mean()
+away_win_pct = df.groupby('away_team')['AwayWin'].mean()
+
+# Combine statistics
+team_stats['HomeScoring'] = home_scoring
+team_stats['AwayScoring'] = away_scoring
+team_stats['HomeConceding'] = home_conceding
+team_stats['AwayConceding'] = away_conceding
+team_stats['HomeWinPct'] = home_win_pct
+team_stats['AwayWinPct'] = away_win_pct
+
+# Calculate overall scoring ability (attack strength)
+team_stats['AttackStrength'] = (team_stats['HomeScoring'] + team_stats['AwayScoring']) / 2
+
+# Calculate overall defensive ability (defense strength)
+team_stats['DefenseStrength'] = (team_stats['HomeConceding'] + team_stats['AwayConceding']) / 2  
+team_stats['DefenseStrength'] = team_stats['DefenseStrength'].max() - team_stats['DefenseStrength']  # Invert so higher is better
+
+# Calculate overall team strength
+team_stats['TeamStrength'] = team_stats['AttackStrength'] - team_stats['DefenseStrength'].min() + team_stats['DefenseStrength']
+
+
+# Calculate Home and Away Power of teams
+team_stats['HomePower'] = ((team_stats['HomeScoring'] - team_stats['HomeConceding']) / (team_stats['HomeScoring'] + team_stats['HomeConceding']))+team_stats['HomeWinPct']
+team_stats['AwayPower'] = ((team_stats['AwayScoring'] - team_stats['AwayConceding']) / (team_stats['AwayScoring'] + team_stats['AwayConceding']))+team_stats['AwayWinPct']
+
+# Calculate Home Advantage (in points)
+home_advantage = int(np.sum(df['HomePointDiff'])/90)
+
+# Function to estimate score distributions
+def estimate_score_distributions(team_stats):
+    score_models = {}
+    
+    for team in teams:
+        # Home scoring model - Poisson distribution
+        home_lambda = team_stats.loc[team, 'HomeScoring']
+        score_models[f"{team}_home_score"] = lambda size, lam=home_lambda: np.random.poisson(lam, size)
+        
+        # Away scoring model - Poisson distribution
+        away_lambda = team_stats.loc[team, 'AwayScoring']
+        score_models[f"{team}_away_score"] = lambda size, lam=away_lambda: np.random.poisson(lam, size)
+        
+    return score_models
+
+# Create score distribution models
+score_models = estimate_score_distributions(team_stats)
+
+# Calculate head-to-head statistics
+def get_head_to_head_stats(team1, team2, df):
+    # Team1 as home, Team2 as away
+    matches1 = df[(df['home_team'] == team1) & (df['away_team'] == team2)]
+    
+    # Team2 as home, Team1 as away
+    matches2 = df[(df['home_team'] == team2) & (df['away_team'] == team1)]
+    
+    team1_wins = matches1['HomeWin'].sum() + matches2['AwayWin'].sum()
+    team2_wins = matches1['AwayWin'].sum() + matches2['HomeWin'].sum()
+    draws = matches1['Draw'].sum() + matches2['Draw'].sum()
+    
+    total_matches = len(matches1) + len(matches2)
+    
+    if total_matches > 0:
+        team1_win_pct = team1_wins / total_matches
+        team2_win_pct = team2_wins / total_matches
+        draw_pct = draws / total_matches
+    else:
+        team1_win_pct = team2_win_pct = draw_pct = 0
+    
+    return {
+        'team1_wins': team1_wins,
+        'team2_wins': team2_wins,
+        'draws': draws,
+        'total_matches': total_matches,
+        'team1_win_pct': team1_win_pct,
+        'team2_win_pct': team2_win_pct,
+        'draw_pct': draw_pct
+    }
+
+# Monte Carlo simulation function for a single match
+def simulate_match(home_team, away_team, num_simulations=10000):
+    results = {
+        'home_wins': 0,
+        'away_wins': 0,
+        'draws': 0,
+        'home_scores': [],
+        'away_scores': []
+    }
+    
+    # Get team strengths
+    home_attack = team_stats.loc[home_team, 'HomeScoring']
+    away_attack = team_stats.loc[away_team, 'AwayScoring']
+    home_defense = team_stats.loc[home_team, 'HomeConceding']
+    away_defense = team_stats.loc[away_team, 'AwayConceding']
+    home_power = team_stats.loc[home_team, 'HomePower']
+    away_power = team_stats.loc[away_team, 'AwayPower']
+    
+    # Home field advantage
+    home_advantage = 1 + (home_power - away_power) # Typical home advantage in points
+    
+    for _ in range(num_simulations):
+        # Generate scores with adjusted probabilities based on opponent's defense
+        home_score = np.random.poisson((home_attack+away_defense)/2)
+        away_score = np.random.poisson((away_attack+home_defense)/2)
+        
+        # Store scores
+        results['home_scores'].append(home_score)
+        results['away_scores'].append(away_score)
+        
+        # Count outcomes
+        if home_score > away_score:
+            results['home_wins'] += 1
+        elif away_score > home_score:
+            results['away_wins'] += 1
+        else:
+            results['draws'] += 1
+    
+    # Calculate probabilities
+    results['home_win_prob'] = results['home_wins'] / num_simulations
+    results['away_win_prob'] = results['away_wins'] / num_simulations
+    results['draw_prob'] = results['draws'] / num_simulations
+    
+    # Calculate most likely scores
+    home_scores = np.array(results['home_scores'])
+    away_scores = np.array(results['away_scores'])
+    
+    score_counts = {}
+    for h, a in zip(home_scores, away_scores):
+        if (h, a) in score_counts:
+            score_counts[(h, a)] += 1
+        else:
+            score_counts[(h, a)] = 1
+    
+    most_likely_score = max(score_counts.items(), key=lambda x: x[1])
+    results['most_likely_score'] = most_likely_score[0]
+    results['most_likely_score_prob'] = most_likely_score[1] / num_simulations
+    
+    return results
+
+# Function to predict a match and display results
+def predict_match(home_team, away_team, num_simulations=10000):
+    if home_team not in teams or away_team not in teams:
+        return f"Error: One or both teams ({home_team}, {away_team}) not found in dataset"
+    
+    # Get head-to-head stats
+    h2h_stats = get_head_to_head_stats(home_team, away_team, df)
+    
+    # Run simulation
+    sim_results = simulate_match(home_team, away_team, num_simulations)
+    
+    # Generate result summary
+    summary = {
+        'home_team': home_team,
+        'away_team': away_team,
+        'home_win_prob': sim_results['home_win_prob'],
+        'away_win_prob': sim_results['away_win_prob'],
+        'draw_prob': sim_results['draw_prob'],
+        'most_likely_score': sim_results['most_likely_score'],
+        'most_likely_score_prob': sim_results['most_likely_score_prob'],
+        'h2h_stats': h2h_stats,
+        'home_scores': sim_results['home_scores'],
+        'away_scores': sim_results['away_scores']
+    }
+    
+    return summary
+
+# Function to visualize prediction results
+def visualize_prediction(prediction):
+    # Create a figure with subplots
+    fig, axes = plt.subplots(2, 2, figsize=(14, 10))
+    
+    # Plot 1: Win probability bar chart
+    win_probs = [prediction['home_win_prob'], prediction['draw_prob'], prediction['away_win_prob']]
+    labels = [f"{prediction['home_team']} Win", "Draw", f"{prediction['away_team']} Win"]
+    colors = ['#1f77b4', '#7f7f7f', '#ff7f0e']
+    
+    axes[0, 0].bar(labels, win_probs, color=colors)
+    axes[0, 0].set_title('Match Outcome Probabilities')
+    axes[0, 0].set_ylabel('Probability')
+    axes[0, 0].set_ylim([0, 1])
+    
+    # Add text labels to bars
+    for i, prob in enumerate(win_probs):
+        axes[0, 0].text(i, prob + 0.01, f"{prob:.1%}", ha='center')
+    
+    # Plot 2: Score heatmap
+    # Create a 2D histogram of scores
+    max_score = max(max(prediction['home_scores']), max(prediction['away_scores'])) + 1
+    hist, xedges, yedges = np.histogram2d(
+        prediction['home_scores'], 
+        prediction['away_scores'],
+        bins=range(0, max_score + 1),
+        density=True
+    )
+    
+    # Plot heatmap
+    im = axes[0, 1].imshow(hist.T, origin='lower', aspect='equal', cmap='viridis')
+    axes[0, 1].set_title('Score Distribution Heatmap')
+    axes[0, 1].set_xlabel(f"{prediction['home_team']} Score")
+    axes[0, 1].set_ylabel(f"{prediction['away_team']} Score")
+    
+    # Add colorbar
+    cbar = fig.colorbar(im, ax=axes[0, 1])
+    cbar.set_label('Probability Density')
+    
+    # Annotate most likely score
+    most_likely = prediction['most_likely_score']
+    axes[0, 1].plot(most_likely[0], most_likely[1], 'r*', markersize=15)
+    axes[0, 1].text(most_likely[0], most_likely[1] + 0.5, 
+                   f"{most_likely[0]}-{most_likely[1]}\n({prediction['most_likely_score_prob']:.1%})", 
+                   color='white', ha='center', fontweight='bold')
+    
+    # Set x and y ticks to integers
+    axes[0, 1].set_xticks(range(0, max_score))
+    axes[0, 1].set_yticks(range(0, max_score))
+    
+    # Plot 3: Point differential histogram
+    point_diffs = np.array(prediction['home_scores']) - np.array(prediction['away_scores'])
+    sns.histplot(point_diffs, kde=True, ax=axes[1, 0])
+    axes[1, 0].set_title('Point Differential Distribution')
+    axes[1, 0].set_xlabel(f"{prediction['home_team']} Point Differential")
+    axes[1, 0].set_ylabel('Frequency')
+    
+    # Plot 4: Head-to-head history
+    h2h = prediction['h2h_stats']
+    if h2h['total_matches'] > 0:
+        h2h_counts = [h2h['team1_wins'], h2h['draws'], h2h['team2_wins']]
+        h2h_labels = [f"{prediction['home_team']} Wins", "Draws", f"{prediction['away_team']} Wins"]
+        
+        axes[1, 1].bar(h2h_labels, h2h_counts, color=colors)
+        axes[1, 1].set_title('Historical Head-to-Head Results')
+        axes[1, 1].set_ylabel('Number of Matches')
+        
+        for i, count in enumerate(h2h_counts):
+            axes[1, 1].text(i, count + 0.1, str(count), ha='center')
+            
+        # Add percentage labels
+        for i, (count, pct) in enumerate(zip(h2h_counts, 
+                                           [h2h['team1_win_pct'], h2h['draw_pct'], h2h['team2_win_pct']])):
+            if count > 0:
+                axes[1, 1].text(i, count/2, f"{pct:.1%}", ha='center', color='white', fontweight='bold')
+    else:
+        axes[1, 1].text(0.5, 0.5, 'No head-to-head history available', 
+                       ha='center', va='center', fontsize=14)
+        axes[1, 1].set_title('Historical Head-to-Head Results')
+        axes[1, 1].set_xticks([])
+        axes[1, 1].set_yticks([])
+    
+    # Add overall title
+    plt.suptitle(f"{prediction['home_team']} vs {prediction['away_team']} - Match Prediction", fontsize=16)
+    plt.tight_layout(rect=[0, 0, 1, 0.96])
+    
+    return fig
+
+# Function to see team rankings based on calculated strengths
+def display_team_rankings():
+    # Sort teams by overall strength
+    rankings = team_stats.sort_values('TeamStrength', ascending=False).copy()
+    rankings = rankings.reset_index()
+    rankings.rename(columns={'index': 'Team'}, inplace=True)
+    rankings['Rank'] = range(1, len(rankings) + 1)
+    
+    # Create a more readable dataframe for display
+    display_cols = ['Rank', 'Team', 'TeamStrength', 'AttackStrength', 'DefenseStrength', 
+                ]
+    display_df = rankings[display_cols].copy()
+    
+    # Round values for readability
+    for col in ['TeamStrength', 'AttackStrength', 'DefenseStrength']:
+        display_df[col] = display_df[col].round(2)
+    
+    # Rename columns for clarity
+    display_df.columns = ['Rank', 'Team', 'Overall Strength', 'Attack', 'Defense', 
+                         ]
+    
+    return display_df
+
+def predict_round(fixtures, num_simulations=1000):
+    predictions = []
+    for home_team, away_team in fixtures:
+        prediction = predict_match(home_team, away_team)
+        predictions.append({
+            home_team + f" Win: {prediction['home_win_prob']}",
+            away_team + f" Win: {prediction['away_win_prob']}",
+            prediction['most_likely_score']
+            })
+        
+    return predictions
+
+# Function to predict all matches in a tournament
+def predict_tournament(team_list, num_simulations=1000):
+    results = {}
+    
+    # Create all possible matchups
+    for i, home_team in enumerate(team_list):
+        for away_team in team_list[i+1:]:
+            # Predict both home and away fixtures
+            home_result = predict_match(home_team, away_team, num_simulations)
+            away_result = predict_match(away_team, home_team, num_simulations)
+            
+            results[(home_team, away_team)] = home_result['most_likely_score']
+            results[(away_team, home_team)] = away_result['most_likely_score']
+    
+    return results
+
+''' # Hist of scores - could fit model to it for better dist than Poisson
+plt.figure(figsize=(10, 6))
+plt.hist(df['AwayScore'], bins=15, alpha=0.7)
+plt.title('Histogram of All Values')
+plt.xlabel('Value')
+plt.ylabel('Frequency')
+plt.grid(True, alpha=0.3)
+plt.show()
+'''
+
+# Round 16 fixtures (matches marked with "R16" in the original data)
+R16 = [
+    ('Bristol', 'Bath'),
+    ('Northampton', 'Exeter'),
+    ('Leicester', 'Sale'),
+    ('Harlequins', 'Gloucester'),
+    ('Saracens', 'Newcastle')
+]
+
+# Round 17 fixtures (matches marked with "R17" in the original data)
+R17 = [
+    ('Bath', 'Leicester'),
+    ('Exeter', 'Harlequins'),
+    ('Gloucester', 'Newcastle'),
+    ('Sale', 'Bristol'),
+    ('Northampton', 'Saracens')
+]
+
+# Round 18 fixtures (matches marked with "R18" in the original data)
+R18 = [
+    ('Bristol', 'Harlequins'),
+    ('Leicester', 'Newcastle'),
+    ('Exeter', 'Sale'),
+    ('Gloucester', 'Northampton'),
+    ('Saracens', 'Bath')
+]
+
+# Example usage
+if __name__ == "__main__":
+    # Display team rankings
+    rankings = display_team_rankings()
+    print("Team Rankings:")
+    print(rankings)
+    print("\n")
+    
+    # Example match prediction
+    home_team = "Northampton"
+    away_team = "Bath"
+    prediction = predict_match(home_team, away_team)
+    
+    print(f"Match Prediction: {home_team} vs {away_team}")
+    print(f"Home win probability: {prediction['home_win_prob']:.2%}")
+    print(f"Away win probability: {prediction['away_win_prob']:.2%}")
+    print(f"Draw probability: {prediction['draw_prob']:.2%}")
+    print(f"Most likely score: {prediction['most_likely_score'][0]}-{prediction['most_likely_score'][1]} " 
+          f"(probability: {prediction['most_likely_score_prob']:.2%})")
+    
+    # Visualize the prediction
+    fig = visualize_prediction(prediction)
+    plt.show()
